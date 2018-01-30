@@ -1,0 +1,31 @@
+from pyVim.connect import SmartConnect, Disconnect
+import ssl
+import sys
+import csv
+
+s = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+s.verify_mode = ssl.CERT_NONE
+
+orig_stdout = sys.stdout
+f = open('vmdetails.csv', 'w')
+sys.stdout = f
+
+try:
+    c = SmartConnect(host="", user="", pwd='',sslContext=s)
+except:
+    c = SmartConnect(host="", user="", pwd='', sslContext=s)
+    print('Invalid or untrusted certificate')
+
+datacenter = c.content.rootFolder.childEntity[0]
+vms = datacenter.vmFolder.childEntity[1:]
+#host = datacenter.hostfolder.childEntity
+with open('vmdetails.csv', 'w') as csvfile:
+        fieldnames = ['vmname', 'powerstate', 'memory', 'hostname', 'datastore']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for i in vms:
+                a=i.summary
+                writer.writerow ({'vmname' : i.name,'powerstate':a.runtime.powerState,'memory': a.config.memorySizeMB,'hostname':a.runtime.host.name, 'datastore' :a.config.vmPathName})
+
+sys.stdout = orig_stdout
+f.close()
